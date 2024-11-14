@@ -101,5 +101,5 @@ for epoch in range(args.epochs):
         batch_correct_imgs =paddle.equal(predicted,y_data).sum()
         total_right_sample+=batch_correct_imgs.numpy()
     print('acc:{:.2f}%'.format(total_right_sample/total_val_sample*100))
-    paddle.save(net.state_dict(), "model.pdparams")
-    paddle.save(optim.state_dict(), "model.pdopt")
+    paddle.save(net.state_dict(), "dynamics_model/model.pdparams")
+    paddle.save(optim.state_dict(), "dynamics_model/model.pdopt")
