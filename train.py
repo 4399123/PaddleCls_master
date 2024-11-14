@@ -41,13 +41,14 @@ val_loader = DataLoader(dataset=val_dataset, batch_size=args.bs)
 
 num_classes=len(train_dataset.classes)
 total_samples=len(train_dataset.samples)
+total_val_sample=len(val_dataset.samples)
 
 #保存标签到pickle
 with open('./lable.plk','wb') as f:
     pickle.dump(train_dataset.class_to_idx,f)
 
 net=mobilenet_v1(num_classes=num_classes,pretrained=False)
-net.train()
+
 
 # 设置优化器
 optim = paddle.optimizer.Adam(parameters=net.parameters())
@@ -55,6 +56,7 @@ optim = paddle.optimizer.Adam(parameters=net.parameters())
 loss_fn = paddle.nn.CrossEntropyLoss()
 
 for epoch in range(args.epochs):
+    net.train()
     for batch_id, data in enumerate(train_loader()):
         x_data = data[0]  # 训练数据
         y_data = data[1]  # 训练数据标签
@@ -82,3 +84,22 @@ for epoch in range(args.epochs):
         optim.step()
         # 梯度清零
         optim.clear_grad()
+
+    net.eval()
+    total_right_sample=0
+    for batch_id, data in enumerate(val_loader()):
+        x_data = data[0]  # 训练数据
+        y_data = data[1]  # 训练数据标签
+        predicts =net(x_data)  # 预测结果
+
+        # 计算损失 等价于 prepare 中loss的设置
+        loss = loss_fn(predicts, y_data)
+
+        # 计算准确率 等价于 prepare 中metrics的设置
+        predicted = paddle.argmax(predicts, axis=1)
+        y_data=paddle.to_tensor(y_data,dtype='int64')
+        batch_correct_imgs =paddle.equal(predicted,y_data).sum()
+        total_right_sample+=batch_correct_imgs.numpy()
+    print('acc:{:.2f}%'.format(total_right_sample/total_val_sample*100))
+    paddle.save(net.state_dict(), "model.pdparams")
+    paddle.save(optim.state_dict(), "model.pdopt")
